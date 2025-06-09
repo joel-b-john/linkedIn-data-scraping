@@ -1,0 +1,58 @@
+
+# Python
+__pycache__/
+*.py[cod]
+*.sqlite3
+*.log
+*.pot
+*.pyc
+*.pyo
+*.pyd
+*.env
+*.DS_Store
+
+# Environment
+.env
+venv/
+env/
+ENV/
+.venv/
+
+# VSCode
+.vscode/
+
+# Django stuff
+*.sqlite3
+db.sqlite3
+/media
+/staticfiles
+/static/
+
+# Selenium cache/downloads
+*.crdownload
+chromedriver.log
+geckodriver.log
+selenium-screenshot.png
+
+# Migrations (optional: you can version these if you prefer)
+**/migrations/
+!*/migrations/__init__.py
+__init__.py
+# OS
+Thumbs.db
+.DS_Store
+
+# Pytest / Coverage
+.coverage
+htmlcov/
+.cache/
+pytestdebug.log
+nosetests.xml
+test-results/
+
+# Logs
+*.log
+
+# IDEs
+.idea/
+*.swp
