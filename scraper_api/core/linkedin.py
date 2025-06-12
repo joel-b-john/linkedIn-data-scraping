@@ -2,6 +2,7 @@ import os
 import time
 import json
 import requests
+import re
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
@@ -9,7 +10,10 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.keys import Keys
 from webdriver_manager.chrome import ChromeDriverManager
 
-COOKIE_FILE = "cookies.json"  # Stored session cookies
+COOKIES_DIR = "user_cookies"
+
+def sanitize_filename(email):
+    return re.sub(r'[^a-zA-Z0-9_\-]', '_', email)
 
 
 def login_and_get_cookies(email, password, save_to_file=True):
@@ -17,12 +21,12 @@ def login_and_get_cookies(email, password, save_to_file=True):
     Logs into LinkedIn using Selenium and returns cookies for authenticated requests.
     """
     options = Options()
-    options.add_argument('--headless')  # Use non-headless if CAPTCHA triggers
+    # options.add_argument('--headless')  
     options.add_argument('--disable-blink-features=AutomationControlled')
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option("useAutomationExtension", False)
     options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122.0.0.0 Safari/537.36")
-
+    options.add_argument("window-size=1200,800")
     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
     driver.get("https://www.linkedin.com/login")
     time.sleep(2)
@@ -34,6 +38,14 @@ def login_and_get_cookies(email, password, save_to_file=True):
         password_input.send_keys(password)
         password_input.send_keys(Keys.RETURN)
         time.sleep(5)
+        if "checkpoint" in driver.current_url:
+            print("🔐 LinkedIn is requesting additional verification.")
+            code_input = driver.find_element(By.ID, "input__email_verification_pin")
+            code = input("📨 Enter the 6-digit code sent to your email/phone: ")
+            code_input.send_keys(code)
+            code_input.send_keys(Keys.RETURN)
+            time.sleep(5)
+
     except Exception as e:
         driver.quit()
         raise Exception("Login failed or form not found: " + str(e))
@@ -43,25 +55,32 @@ def login_and_get_cookies(email, password, save_to_file=True):
     driver.quit()
 
     cookies = {cookie['name']: cookie['value'] for cookie in raw_cookies}
-
+    print(cookies)
     if 'li_at' not in cookies or 'JSESSIONID' not in cookies:
         raise Exception("Login failed or required cookies not found")
 
     if save_to_file:
-        with open(COOKIE_FILE, "w") as f:
+        os.makedirs(COOKIES_DIR, exist_ok=True)
+        filename = f"{email}.json"
+        filepath = os.path.join(COOKIES_DIR, filename)
+        with open(filepath, "w") as f:
             json.dump(cookies, f, indent=2)
 
     return cookies
 
 
-def load_cookies_if_valid():
+def load_cookies_if_valid(email):
     """
     Loads cookies from file and checks if session is still valid by calling /voyager/api/me.
     """
-    if not os.path.exists(COOKIE_FILE):
+    filename = f"{email}.json"
+    cookie_path = os.path.join(COOKIES_DIR, filename)
+
+    if not os.path.exists(cookie_path):
+        print(f"❌ Cookie file for {email} not found.")
         return None
 
-    with open(COOKIE_FILE, "r") as f:
+    with open(cookie_path, "r") as f:
         cookies = json.load(f)
 
     li_at = cookies.get('li_at')

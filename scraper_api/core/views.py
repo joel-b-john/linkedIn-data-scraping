@@ -34,7 +34,7 @@ class LinkedInProfileView(APIView):
 
         try:
             # Try to load existing valid cookies
-            cookies = load_cookies_if_valid()
+            cookies = load_cookies_if_valid(email)
 
             # If not available or expired, login again
             if not cookies:
